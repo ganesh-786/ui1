@@ -133,6 +133,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     // The manifest bytes are ours; SRI protects against CDN compromise, not this.
     template = template.replace(/\s+integrity="[^"]*"/gi, '').replace(/\s+crossorigin="[^"]*"/gi, '');
 
+    // Prevent inline event handler attributes (e.g. onclick="{{ chunk.onRemove }}")
+    // from being parsed into executable handlers when we replace the document.
+    // Convert all `on...=` attributes in the template to `data-on-...=` so
+    // template placeholders remain inert until a safe rehydration passes runs.
+    template = template.replace(/\s+on([a-zA-Z]+)=/g, ' data-on-$1=');
+
     const resourceScript = '<script>window.__resources = ' +
       JSON.stringify(resourceMap).split('</' + 'script>').join('<\\/' + 'script>') +
       ';</' + 'script>';
