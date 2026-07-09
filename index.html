@@ -156,7 +156,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     const dead = Array.from(document.scripts);
     for (const old of dead) {
       const s = document.createElement('script');
-      for (const a of old.attributes) s.setAttribute(a.name, a.value);
+      for (const a of old.attributes) {
+        // Avoid copying inline event handlers (onclick, onblur, etc.)
+        // directly into the live DOM. Setting attributes like
+        // `onclick` creates executable functions immediately which can
+        // reference template variables (e.g. `chunk`) before they're
+        // defined, causing ReferenceError. Store them on data-attributes
+        // instead so templates remain inert.
+        if (/^on/i.test(a.name)) {
+          s.setAttribute('data-on-' + a.name.slice(2), a.value);
+        } else {
+          s.setAttribute(a.name, a.value);
+        }
+      }
       s.textContent = old.textContent;
       // text/babel scripts with a src: fetch and inline. transformScriptTags
       // does XHR against the src, but blob:null/ from a file:// origin is
